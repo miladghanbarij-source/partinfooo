@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ابزار هوشمند انتخاب مواد پلاستیکی (AI-Powered)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            padding: 0 1.5rem;
+        }
+        .accordion-button.active + .accordion-content {
+            max-height: 500px; /* A large enough value */
+            padding: 1rem 1.5rem;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        .transition-transform {
+            transition: transform 0.3s ease-in-out;
+        }
+        /* Loader styles */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-3xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">ابزار انتخاب مواد با هوش مصنوعی</h1>
+            <p class="mt-2 text-md text-gray-600">هر محصولی را جستجو کنید تا هوش مصنوعی بهترین ماده را پیشنهاد دهد.</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="searchInput" placeholder="مثال: قاب گوشی، شلنگ آب، بدنه پهپاد..." class="flex-grow w-full px-4 py-3 text-lg bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                <button id="searchButton" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-xl text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-3">
+                    <span id="buttonText">جستجو</span>
+                    <div id="loader" class="loader hidden"></div>
+                </button>
+            </div>
+        </div>
+        
+        <div id="loadingMessage" class="hidden text-center text-blue-700 font-semibold p-4">
+            <p>در حال تحقیق...</p>
+        </div>
+
+        <div id="resultsContainer" class="hidden">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="mb-6 pb-6 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-500 mb-2">ماده پیشنهادی:</h2>
+                    <p id="materialName" class="text-2xl font-bold text-blue-700"></p>
+                    <h2 class="text-lg font-semibold text-gray-500 mt-4 mb-2">گرید پیشنهادی:</h2>
+                    <p id="materialGrade" class="text-xl font-bold text-gray-800"></p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <button class="accordion-button w-full flex justify-between items-center text-right p-4 bg-green-50 hover:bg-green-100 rounded-lg focus:outline-none transition-colors">
+                            <span class="text-xl font-bold text-green-800">✅ مزایا</span>
+                            <svg class="w-6 h-6 text-green-800 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="advantagesContent" class="accordion-content bg-white rounded-b-lg"></div>
+                    </div>
+                    <div>
+                        <button class="accordion-button w-full flex justify-between items-center text-right p-4 bg-red-50 hover:bg-red-100 rounded-lg focus:outline-none transition-colors">
+                            <span class="text-xl font-bold text-red-800">❌ معایب</span>
+                            <svg class="w-6 h-6 text-red-800 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="disadvantagesContent" class="accordion-content bg-white rounded-b-lg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="errorMessage" class="hidden text-center bg-red-100 text-red-800 p-4 rounded-xl shadow-md">
+            <p>خطایی رخ داد. لطفاً دوباره تلاش کنید یا از کلمات کلیدی دیگری استفاده نمایید.</p>
+        </div>
+
+    </div>
+    
+    <footer class="text-center py-4 mt-8">
+        <p class="text-sm text-gray-500">توسعه داده شده توسط لاک پشت</p>
+    </footer>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const buttonText = document.getElementById('buttonText');
+        const loader = document.getElementById('loader');
+        
+        const resultsContainer = document.getElementById('resultsContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        const loadingMessage = document.getElementById('loadingMessage');
+
+        const materialName = document.getElementById('materialName');
+        const materialGrade = document.getElementById('materialGrade');
+        const advantagesContent = document.getElementById('advantagesContent');
+        const disadvantagesContent = document.getElementById('disadvantagesContent');
+        const accordions = document.querySelectorAll('.accordion-button');
+
+        // Cache (simple database) to store results
+        const cache = {};
+
+        const API_KEY = ""; // In a real app, this should be kept secure. For this environment it's handled automatically.
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+        
+        function setLoadingState(isLoading) {
+            if (isLoading) {
+                buttonText.classList.add('hidden');
+                loader.classList.remove('hidden');
+                searchButton.disabled = true;
+                resultsContainer.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+                loadingMessage.classList.remove('hidden');
+            } else {
+                buttonText.classList.remove('hidden');
+                loader.classList.add('hidden');
+                searchButton.disabled = false;
+                loadingMessage.classList.add('hidden');
+            }
+        }
+
+        async function performSearch() {
+            const query = searchInput.value.trim().toLowerCase();
+            if (query === '') return;
+
+            // 1. Check if the result is in our database (cache)
+            if (cache[query]) {
+                console.log(`Serving "${query}" from cache.`);
+                displayResults(cache[query]);
+                return; // Stop here if found in cache
+            }
+            
+            // 2. If not in cache, show loader and call AI
+            console.log(`Fetching "${query}" from AI.`);
+            setLoadingState(true);
+            
+            const systemPrompt = `You are an expert material scientist specializing in polymers. 
+            For a given product, identify the single most suitable plastic material and its common grade. 
+            Then, list its key advantages and disadvantages for that specific application.
+            Respond ONLY with a JSON object in the following format, with no extra text or explanations. The response must be in Persian:
+            {
+              "material": "نام ماده (فرمول شیمیایی)",
+              "grade": "نام گرید رایج",
+              "advantages": ["مزیت اول", "مزیت دوم", "..."],
+              "disadvantages": ["عیب اول", "عیب دوم", "..."]
+            }`;
+
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: `Product: "${query}"` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                    }
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const jsonText = result.candidates[0].content.parts[0].text;
+                const data = JSON.parse(jsonText);
+
+                // 3. Save the new result to our database (cache)
+                cache[query] = data;
+                
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                displayError();
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function displayResults(data) {
+            materialName.textContent = data.material || 'نامشخص';
+            materialGrade.textContent = data.grade || 'نامشخص';
+            
+            advantagesContent.innerHTML = `<ul class="list-disc pr-5 space-y-2 text-gray-700">${(data.advantages || []).map(item => `<li>${item}</li>`).join('')}</ul>`;
+            disadvantagesContent.innerHTML = `<ul class="list-disc pr-5 space-y-2 text-gray-700">${(data.disadvantages || []).map(item => `<li>${item}</li>`).join('')}</ul>`;
+            
+            resultsContainer.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            
+            accordions.forEach(button => {
+                button.classList.remove('active');
+                button.querySelector('svg').classList.remove('rotate-180');
+                const content = button.nextElementSibling;
+                content.style.maxHeight = null;
+                content.style.padding = '0 1.5rem';
+            });
+        }
+
+        function displayError() {
+            resultsContainer.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+        }
+
+        searchButton.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        accordions.forEach(button => {
+            button.addEventListener('click', () => {
+                const isActive = button.classList.contains('active');
+                button.classList.toggle('active');
+                button.querySelector('svg').classList.toggle('rotate-180');
+                const content = button.nextElementSibling;
+                if (!isActive) {
+                    content.style.maxHeight = content.scrollHeight + 32 + "px";
+                    content.style.padding = '1rem 1.5rem';
+                } else {
+                    content.style.maxHeight = null;
+                    content.style.padding = '0 1.5rem';
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
+
