@@ -94,7 +94,8 @@
         </div>
         
         <div id="errorMessage" class="hidden text-center bg-red-100 text-red-800 p-4 rounded-xl shadow-md">
-            <p>خطایی رخ داد. لطفاً دوباره تلاش کنید یا از کلمات کلیدی دیگری استفاده نمایید.</p>
+            <!-- The specific error will be inserted here by JavaScript -->
+            <p></p> 
         </div>
 
     </div>
@@ -119,7 +120,6 @@
         const disadvantagesContent = document.getElementById('disadvantagesContent');
         const accordions = document.querySelectorAll('.accordion-button');
 
-        // Cache (simple database) to store results
         const cache = {};
 
         const API_KEY = "AIzaSyBBeOsNPmMfbqM_4rKw9f3H1LPY_2xYGUI";
@@ -145,14 +145,12 @@
             const query = searchInput.value.trim().toLowerCase();
             if (query === '') return;
 
-            // 1. Check if the result is in our database (cache)
             if (cache[query]) {
                 console.log(`Serving "${query}" from cache.`);
                 displayResults(cache[query]);
-                return; // Stop here if found in cache
+                return;
             }
             
-            // 2. If not in cache, show loader and call AI
             console.log(`Fetching "${query}" from AI.`);
             setLoadingState(true);
             
@@ -190,14 +188,15 @@
                 const jsonText = result.candidates[0].content.parts[0].text;
                 const data = JSON.parse(jsonText);
 
-                // 3. Save the new result to our database (cache)
                 cache[query] = data;
                 
                 displayResults(data);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
-                displayError();
+                // *** THIS IS THE IMPORTANT CHANGE ***
+                // Now we pass the actual error to the display function
+                displayError(error);
             } finally {
                 setLoadingState(false);
             }
@@ -222,7 +221,11 @@
             });
         }
 
-        function displayError() {
+        // *** THIS IS THE IMPORTANT CHANGE ***
+        // The function now accepts an error object and displays its message
+        function displayError(error) {
+            const errorElement = document.querySelector("#errorMessage p");
+            errorElement.textContent = `خطای فنی: ${error.toString()}`;
             resultsContainer.classList.add('hidden');
             errorMessage.classList.remove('hidden');
         }
@@ -253,4 +256,3 @@
 
 </body>
 </html>
-
