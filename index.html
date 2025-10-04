@@ -94,7 +94,6 @@
         </div>
         
         <div id="errorMessage" class="hidden text-center bg-red-100 text-red-800 p-4 rounded-xl shadow-md">
-            <!-- The specific error will be inserted here by JavaScript -->
             <p></p> 
         </div>
 
@@ -122,8 +121,8 @@
 
         const cache = {};
 
-        const API_KEY = "AIzaSyBBeOsNPmMfbqM_4rKw9f3H1LPY_2xYGUI";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+        // *** CHANGE 1: The API URL now points to our own serverless function ***
+        const API_URL = '/api/generate';
         
         function setLoadingState(isLoading) {
             if (isLoading) {
@@ -146,56 +145,31 @@
             if (query === '') return;
 
             if (cache[query]) {
-                console.log(`Serving "${query}" from cache.`);
                 displayResults(cache[query]);
                 return;
             }
             
-            console.log(`Fetching "${query}" from AI.`);
             setLoadingState(true);
             
-            const systemPrompt = `You are an expert material scientist specializing in polymers. 
-            For a given product, identify the single most suitable plastic material and its common grade. 
-            Then, list its key advantages and disadvantages for that specific application.
-            Respond ONLY with a JSON object in the following format, with no extra text or explanations. The response must be in Persian:
-            {
-              "material": "نام ماده (فرمول شیمیایی)",
-              "grade": "نام گرید رایج",
-              "advantages": ["مزیت اول", "مزیت دوم", "..."],
-              "disadvantages": ["عیب اول", "عیب دوم", "..."]
-            }`;
-
             try {
-                const payload = {
-                    contents: [{ parts: [{ text: `Product: "${query}"` }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                    }
-                };
-
+                // *** CHANGE 2: We send a simpler request to our own backend ***
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ query: query }) // Send the search term
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `API Error: ${response.status}`);
                 }
 
-                const result = await response.json();
-                const jsonText = result.candidates[0].content.parts[0].text;
-                const data = JSON.parse(jsonText);
-
+                const data = await response.json();
                 cache[query] = data;
-                
                 displayResults(data);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
-                // *** THIS IS THE IMPORTANT CHANGE ***
-                // Now we pass the actual error to the display function
                 displayError(error);
             } finally {
                 setLoadingState(false);
@@ -221,8 +195,6 @@
             });
         }
 
-        // *** THIS IS THE IMPORTANT CHANGE ***
-        // The function now accepts an error object and displays its message
         function displayError(error) {
             const errorElement = document.querySelector("#errorMessage p");
             errorElement.textContent = `خطای فنی: ${error.toString()}`;
